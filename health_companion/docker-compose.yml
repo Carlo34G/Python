@@ -1,0 +1,24 @@
+# Deploy the Health Companion on srv-02, ideally next to your SparkyFitness stack.
+#
+#   1) cp .env.example .env   &&   edit .env
+#   2) docker compose up -d --build
+#   3) docker compose logs -f health-companion   # watch it start
+#
+# TIP: If Sparky runs on this same Docker host, you can either point SPARKY_BASE_URL
+# at http://<host-ip>:3004, or attach this service to Sparky's compose network and
+# use the internal service name. Long-polling means NO inbound ports are required.
+
+services:
+  health-companion:
+    build: .
+    image: health-companion:latest
+    container_name: health-companion
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - DATABASE_PATH=/data/health_companion.db
+    volumes:
+      - health_companion_data:/data
+
+volumes:
+  health_companion_data:
