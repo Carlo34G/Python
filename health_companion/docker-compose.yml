@@ -1,12 +1,19 @@
-# Deploy the Health Companion on srv-02, ideally next to your SparkyFitness stack.
+# Deploy the Health Companion — works two ways:
 #
-#   1) cp .env.example .env   &&   edit .env
-#   2) docker compose up -d --build
-#   3) docker compose logs -f health-companion   # watch it start
+# A) CLI on srv-01 (uses a .env file):
+#      cp .env.example .env && edit it
+#      docker compose up -d --build
+#      docker compose logs -f health-companion
 #
-# TIP: If Sparky runs on this same Docker host, you can either point SPARKY_BASE_URL
-# at http://<host-ip>:3004, or attach this service to Sparky's compose network and
-# use the internal service name. Long-polling means NO inbound ports are required.
+# B) Portainer Git stack (no .env file — set vars in Portainer's UI):
+#      Stacks → Add stack → Repository
+#        Repository URL : https://github.com/Carlo34G/Python
+#        Reference       : refs/heads/claude/health-fitness-tracker-sparky-aks4hw
+#        Compose path    : health_companion/docker-compose.yml
+#      Then add TELEGRAM_BOT_TOKEN, TELEGRAM_ALLOWED_USER_IDS, OPENROUTER_API_KEY
+#      (and any others below) under "Environment variables" → Deploy.
+#
+# Long-polling means NO inbound ports are required.
 
 services:
   health-companion:
@@ -14,9 +21,35 @@ services:
     image: health-companion:latest
     container_name: health-companion
     restart: unless-stopped
-    env_file: .env
+    # Optional: load a local .env if present (CLI path). Won't error when absent
+    # (Portainer Git-stack path), so both deployment methods work from one file.
+    env_file:
+      - path: .env
+        required: false
+    # Explicit passthrough so Portainer's stack Environment variables reach the
+    # container via ${VAR} interpolation. Undefined vars simply stay empty.
     environment:
       - DATABASE_PATH=/data/health_companion.db
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - TELEGRAM_ALLOWED_USER_IDS=${TELEGRAM_ALLOWED_USER_IDS:-}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - OPENROUTER_MODEL=${OPENROUTER_MODEL:-openai/gpt-4o-mini}
+      - OPENROUTER_BASE_URL=${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
+      - FIRECRAWL_API_KEY=${FIRECRAWL_API_KEY:-}
+      - FIRECRAWL_BASE_URL=${FIRECRAWL_BASE_URL:-https://api.firecrawl.dev}
+      - NUTRITIONIX_APP_ID=${NUTRITIONIX_APP_ID:-}
+      - NUTRITIONIX_APP_KEY=${NUTRITIONIX_APP_KEY:-}
+      - SPARKY_BASE_URL=${SPARKY_BASE_URL:-}
+      - SPARKY_EMAIL=${SPARKY_EMAIL:-}
+      - SPARKY_PASSWORD=${SPARKY_PASSWORD:-}
+      - SPARKY_API_KEY=${SPARKY_API_KEY:-}
+      - USER_SEX=${USER_SEX:-male}
+      - USER_AGE=${USER_AGE:-50}
+      - USER_HEIGHT_CM=${USER_HEIGHT_CM:-175}
+      - USER_START_WEIGHT_KG=${USER_START_WEIGHT_KG:-120}
+      - USER_GOAL_WEIGHT_KG=${USER_GOAL_WEIGHT_KG:-95}
+      - USER_ACTIVITY_FACTOR=${USER_ACTIVITY_FACTOR:-1.35}
+      - USER_DAILY_DEFICIT=${USER_DAILY_DEFICIT:-700}
     volumes:
       - health_companion_data:/data
 
