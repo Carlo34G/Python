@@ -1,0 +1,65 @@
+# NO-BUILD deployment for Portainer Git stacks.
+#
+# Use this file when Portainer/BuildKit can't build images (the
+# "failed to list workers for Build" error). It uses the stock python image and
+# clones + installs + runs the bot at container startup, so Portainer only has to
+# PULL an image — it never builds anything.
+#
+# Portainer → Stacks → Add stack → Repository
+#   Repository URL : https://github.com/Carlo34G/Python
+#   Reference      : refs/heads/claude/health-fitness-tracker-sparky-aks4hw
+#   Compose path   : health_companion/docker-compose.portainer.yml   <-- this file
+# Then add TELEGRAM_BOT_TOKEN, TELEGRAM_ALLOWED_USER_IDS, OPENROUTER_API_KEY
+# under "Environment variables" and Deploy.
+#
+# Note: deps are installed on each container (re)start (~30-60s). That's the
+# trade-off for needing zero build step. The bot also self-updates to the latest
+# branch commit whenever the container restarts.
+
+services:
+  health-companion:
+    image: python:3.12-slim
+    container_name: health-companion
+    restart: unless-stopped
+    command:
+      - bash
+      - -c
+      - |
+        set -e
+        export DEBIAN_FRONTEND=noninteractive
+        cd /
+        apt-get update -qq
+        apt-get install -y -qq --no-install-recommends git >/dev/null
+        rm -rf /app
+        git clone --depth 1 -b claude/health-fitness-tracker-sparky-aks4hw \
+          https://github.com/Carlo34G/Python.git /app
+        cd /app/health_companion
+        pip install --no-cache-dir -r requirements.txt
+        exec python bot.py
+    environment:
+      - DATABASE_PATH=/data/health_companion.db
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - TELEGRAM_ALLOWED_USER_IDS=${TELEGRAM_ALLOWED_USER_IDS:-}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - OPENROUTER_MODEL=${OPENROUTER_MODEL:-openai/gpt-4o-mini}
+      - OPENROUTER_BASE_URL=${OPENROUTER_BASE_URL:-https://openrouter.ai/api/v1}
+      - FIRECRAWL_API_KEY=${FIRECRAWL_API_KEY:-}
+      - FIRECRAWL_BASE_URL=${FIRECRAWL_BASE_URL:-https://api.firecrawl.dev}
+      - NUTRITIONIX_APP_ID=${NUTRITIONIX_APP_ID:-}
+      - NUTRITIONIX_APP_KEY=${NUTRITIONIX_APP_KEY:-}
+      - SPARKY_BASE_URL=${SPARKY_BASE_URL:-}
+      - SPARKY_EMAIL=${SPARKY_EMAIL:-}
+      - SPARKY_PASSWORD=${SPARKY_PASSWORD:-}
+      - SPARKY_API_KEY=${SPARKY_API_KEY:-}
+      - USER_SEX=${USER_SEX:-male}
+      - USER_AGE=${USER_AGE:-50}
+      - USER_HEIGHT_CM=${USER_HEIGHT_CM:-175}
+      - USER_START_WEIGHT_KG=${USER_START_WEIGHT_KG:-120}
+      - USER_GOAL_WEIGHT_KG=${USER_GOAL_WEIGHT_KG:-95}
+      - USER_ACTIVITY_FACTOR=${USER_ACTIVITY_FACTOR:-1.35}
+      - USER_DAILY_DEFICIT=${USER_DAILY_DEFICIT:-700}
+    volumes:
+      - health_companion_data:/data
+
+volumes:
+  health_companion_data:
