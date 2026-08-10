@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Record Collection Database</title>
+  <style>
+    :root {
+      --bg: #14110f;
+      --panel: #1e1a17;
+      --panel-2: #262019;
+      --ink: #f3ede4;
+      --muted: #a89b8a;
+      --accent: #c8703a;
+      --accent-ink: #fff;
+      --line: #352d25;
+      --ok: #6fbf73;
+      --warn: #e0b451;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      line-height: 1.5;
+    }
+    header {
+      padding: 1.5rem 1.25rem;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+    header h1 { font-size: 1.35rem; margin: 0; font-weight: 650; }
+    header .sub { color: var(--muted); font-size: 0.9rem; }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 1.25rem; }
+    .uploader {
+      background: var(--panel);
+      border: 1px dashed var(--line);
+      border-radius: 14px;
+      padding: 1.5rem;
+      text-align: center;
+    }
+    .uploader.drag { border-color: var(--accent); background: var(--panel-2); }
+    .btn {
+      background: var(--accent);
+      color: var(--accent-ink);
+      border: 0;
+      padding: 0.65rem 1.15rem;
+      border-radius: 9px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn:disabled { opacity: 0.5; cursor: default; }
+    .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+    .hint { color: var(--muted); font-size: 0.85rem; margin-top: 0.6rem; }
+    .row { display: flex; gap: 0.75rem; align-items: center; justify-content: center; flex-wrap: wrap; }
+    .toolbar { display: flex; gap: 0.75rem; margin: 1.5rem 0 1rem; align-items: center; flex-wrap: wrap; }
+    input[type="search"] {
+      flex: 1; min-width: 200px;
+      background: var(--panel); border: 1px solid var(--line);
+      color: var(--ink); padding: 0.6rem 0.8rem; border-radius: 9px; font-size: 0.95rem;
+    }
+    .count { color: var(--muted); font-size: 0.9rem; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1rem;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .cover {
+      aspect-ratio: 1 / 1;
+      background: var(--panel-2) center/cover no-repeat;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--muted); font-size: 2rem;
+    }
+    .card-body { padding: 0.8rem; flex: 1; display: flex; flex-direction: column; gap: 0.25rem; }
+    .card-body .artist { font-weight: 650; }
+    .card-body .album { color: var(--muted); font-size: 0.9rem; }
+    .meta { color: var(--muted); font-size: 0.8rem; margin-top: 0.35rem; }
+    .comment { font-size: 0.82rem; margin-top: 0.4rem; color: #d8ccbb; }
+    .card-actions { padding: 0.6rem 0.8rem; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; }
+    .link { color: var(--accent); text-decoration: none; font-size: 0.82rem; }
+    .del { background: none; border: 0; color: var(--muted); cursor: pointer; font-size: 0.82rem; }
+    .del:hover { color: #e06a4a; }
+    .empty { text-align: center; color: var(--muted); padding: 3rem 1rem; }
+    /* Modal */
+    .modal-bg {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+      display: none; align-items: center; justify-content: center; padding: 1rem;
+    }
+    .modal-bg.show { display: flex; }
+    .modal {
+      background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+      max-width: 460px; width: 100%; padding: 1.25rem;
+    }
+    .modal h3 { margin: 0 0 0.5rem; }
+    .modal .field { margin: 0.6rem 0; }
+    .modal label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 0.2rem; }
+    .modal input, .modal textarea {
+      width: 100%; background: var(--panel-2); border: 1px solid var(--line);
+      color: var(--ink); border-radius: 8px; padding: 0.5rem 0.6rem; font-size: 0.9rem; font-family: inherit;
+    }
+    .banner { border-radius: 9px; padding: 0.6rem 0.8rem; font-size: 0.85rem; margin-bottom: 0.75rem; }
+    .banner.warn { background: rgba(224,180,81,0.14); border: 1px solid var(--warn); color: var(--warn); }
+    .banner.err { background: rgba(224,106,74,0.14); border: 1px solid #e06a4a; color: #f0a58f; }
+    .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--muted); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <header>
+    <span style="font-size:1.6rem">🎵</span>
+    <div>
+      <h1>Record Collection Database</h1>
+      <div class="sub">Snap a sleeve — the AI reads it, Discogs fills the details.</div>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div id="statusBanner"></div>
+
+    <div class="uploader" id="dropzone">
+      <div class="row">
+        <button class="btn" id="pickBtn">📷 Upload cover photo</button>
+        <span id="uploadStatus" class="hint"></span>
+      </div>
+      <input type="file" id="fileInput" accept="image/*" capture="environment" hidden />
+      <div class="hint">Drag &amp; drop an image here, or click to choose. One record at a time.</div>
+    </div>
+
+    <div class="toolbar">
+      <input type="search" id="search" placeholder="Search your collection by artist or album…" />
+      <span class="count" id="count"></span>
+    </div>
+
+    <div class="grid" id="grid"></div>
+    <div class="empty" id="empty" style="display:none">Your collection is empty. Upload a cover to begin.</div>
+  </div>
+
+  <!-- Confirm / duplicate modal -->
+  <div class="modal-bg" id="modalBg">
+    <div class="modal">
+      <div id="modalBanner"></div>
+      <h3 id="modalTitle">Confirm record</h3>
+      <div class="field"><label>Artist</label><input id="mArtist" /></div>
+      <div class="field"><label>Album</label><input id="mAlbum" /></div>
+      <div class="field"><label>Release date</label><input id="mDate" /></div>
+      <div class="field"><label>Comment</label><textarea id="mComment" rows="3"></textarea></div>
+      <div class="row" style="justify-content: flex-end; margin-top: 0.75rem;">
+        <button class="btn ghost" id="mCancel">Cancel</button>
+        <button class="btn" id="mSave">Add to collection</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const $ = (id) => document.getElementById(id);
+    let pending = null; // scan result awaiting confirmation
+
+    async function loadHealth() {
+      try {
+        const r = await fetch('/api/health');
+        const h = await r.json();
+        const bits = [];
+        if (!h.recognizer_configured) bits.push('⚠️ AI recognizer not configured (set ANTHROPIC_API_KEY)');
+        if (!h.discogs_configured) bits.push('ℹ️ Discogs not configured — records saved without release details');
+        if (bits.length) {
+          $('statusBanner').innerHTML =
+            `<div class="banner warn">${bits.join(' &nbsp;·&nbsp; ')}</div>`;
+        }
+      } catch (_) {}
+    }
+
+    async function loadRecords(q = '') {
+      const url = '/api/records' + (q ? '?q=' + encodeURIComponent(q) : '');
+      const r = await fetch(url);
+      const records = await r.json();
+      const grid = $('grid');
+      grid.innerHTML = '';
+      $('count').textContent = records.length + (records.length === 1 ? ' record' : ' records');
+      $('empty').style.display = records.length ? 'none' : 'block';
+      for (const rec of records) grid.appendChild(cardFor(rec));
+    }
+
+    function cardFor(rec) {
+      const el = document.createElement('div');
+      el.className = 'card';
+      const cover = rec.cover_image_url
+        ? `<div class="cover" style="background-image:url('${rec.cover_image_url}')"></div>`
+        : `<div class="cover">💿</div>`;
+      const meta = [rec.release_date, rec.genre, rec.label].filter(Boolean).join(' · ');
+      el.innerHTML = `
+        ${cover}
+        <div class="card-body">
+          <div class="artist">${escapeHtml(rec.artist)}</div>
+          <div class="album">${escapeHtml(rec.album)}</div>
+          ${meta ? `<div class="meta">${escapeHtml(meta)}</div>` : ''}
+          ${rec.comment ? `<div class="comment">${escapeHtml(rec.comment)}</div>` : ''}
+        </div>
+        <div class="card-actions">
+          ${rec.discogs_url ? `<a class="link" href="${rec.discogs_url}" target="_blank" rel="noopener">Discogs ↗</a>` : '<span></span>'}
+          <button class="del" data-id="${rec.id}">Remove</button>
+        </div>`;
+      el.querySelector('.del').addEventListener('click', () => removeRecord(rec.id));
+      return el;
+    }
+
+    function escapeHtml(s) {
+      return (s || '').replace(/[&<>"']/g, (c) => (
+        { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    async function removeRecord(id) {
+      if (!confirm('Remove this record from your collection?')) return;
+      await fetch('/api/records/' + id, { method: 'DELETE' });
+      loadRecords($('search').value.trim());
+    }
+
+    async function uploadFile(file) {
+      if (!file) return;
+      setStatus(`<span class="spinner"></span> Reading “${file.name}”…`);
+      const fd = new FormData();
+      fd.append('file', file);
+      try {
+        const r = await fetch('/api/records/upload', { method: 'POST', body: fd });
+        const data = await r.json();
+        if (!r.ok) {
+          setStatus('');
+          alert(data.detail || 'Upload failed.');
+          return;
+        }
+        setStatus('');
+        if (data.duplicate && data.duplicate.is_duplicate) {
+          openModal(data, true);
+        } else {
+          // Already saved server-side; refresh and show a confirm/edit modal
+          // only if recognizer confidence was low.
+          if (data.recognizer_note) openModal(data, false);
+          loadRecords($('search').value.trim());
+        }
+      } catch (err) {
+        setStatus('');
+        alert('Upload failed: ' + err);
+      }
+    }
+
+    function openModal(data, isDuplicate) {
+      pending = data;
+      const rec = data.record;
+      $('mArtist').value = rec.artist || '';
+      $('mAlbum').value = rec.album || '';
+      $('mDate').value = rec.release_date || '';
+      $('mComment').value = rec.comment || '';
+      let banner = '';
+      if (isDuplicate) {
+        banner = `<div class="banner warn">You may already own this: “${escapeHtml(data.duplicate.existing.artist)} — ${escapeHtml(data.duplicate.existing.album)}”. Add it anyway?</div>`;
+        $('modalTitle').textContent = 'Possible duplicate';
+      } else if (data.recognizer_note) {
+        banner = `<div class="banner warn">${escapeHtml(data.recognizer_note)}</div>`;
+        $('modalTitle').textContent = 'Confirm record';
+      }
+      $('modalBanner').innerHTML = banner;
+      $('modalBg').classList.add('show');
+    }
+
+    function closeModal() { $('modalBg').classList.remove('show'); pending = null; }
+
+    async function saveFromModal() {
+      const payload = {
+        artist: $('mArtist').value.trim(),
+        album: $('mAlbum').value.trim(),
+        release_date: $('mDate').value.trim() || null,
+        comment: $('mComment').value.trim() || null,
+        genre: pending?.record.genre || null,
+        label: pending?.record.label || null,
+        country: pending?.record.country || null,
+        cover_image_url: pending?.record.cover_image_url || null,
+        discogs_url: pending?.record.discogs_url || null,
+        source: 'photo',
+      };
+      if (!payload.artist || !payload.album) { alert('Artist and album are required.'); return; }
+      const r = await fetch('/api/records', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!r.ok) { alert('Could not save.'); return; }
+      closeModal();
+      loadRecords($('search').value.trim());
+    }
+
+    function setStatus(html) { $('uploadStatus').innerHTML = html; }
+
+    // Wire up events
+    $('pickBtn').addEventListener('click', () => $('fileInput').click());
+    $('fileInput').addEventListener('change', (e) => {
+      uploadFile(e.target.files[0]);
+      e.target.value = '';
+    });
+    $('mCancel').addEventListener('click', closeModal);
+    $('mSave').addEventListener('click', saveFromModal);
+    $('modalBg').addEventListener('click', (e) => { if (e.target === $('modalBg')) closeModal(); });
+
+    let searchTimer;
+    $('search').addEventListener('input', (e) => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => loadRecords(e.target.value.trim()), 250);
+    });
+
+    const dz = $('dropzone');
+    ['dragenter', 'dragover'].forEach((ev) =>
+      dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.add('drag'); }));
+    ['dragleave', 'drop'].forEach((ev) =>
+      dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.remove('drag'); }));
+    dz.addEventListener('drop', (e) => {
+      const file = e.dataTransfer.files[0];
+      if (file) uploadFile(file);
+    });
+
+    loadHealth();
+    loadRecords();
+  </script>
+</body>
+</html>
