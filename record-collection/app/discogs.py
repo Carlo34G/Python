@@ -49,8 +49,9 @@ def search_release(artist: str, album: str) -> DiscogsMatch | None:
     params = {
         "q": query,
         "type": "release",
-        "token": settings.discogs_token,
         "per_page": 5,
+        # Auth: personal token, or Consumer Key + Secret.
+        **settings.discogs_auth_params(),
     }
     headers = {"User-Agent": settings.discogs_user_agent}
 
