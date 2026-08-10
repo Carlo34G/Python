@@ -1,0 +1,17 @@
+services:
+  record-collection:
+    build: .
+    container_name: record-collection
+    restart: unless-stopped
+    ports:
+      # host:container — change the host port if 8000 is taken on srv-02.
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      # Ensure the DB lives on the mounted volume regardless of .env.
+      DATABASE_URL: sqlite:////data/records.db
+    volumes:
+      # Persists the SQLite database (and, if used, the Google
+      # service-account JSON) across container restarts and redeploys.
+      - ./data:/data

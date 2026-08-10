@@ -1,0 +1,10 @@
+fastapi>=0.110
+uvicorn[standard]>=0.29
+anthropic>=0.40
+requests>=2.31
+python-multipart>=0.0.9
+SQLAlchemy>=2.0
+pydantic>=2.6
+# Optional — only needed for the Google Sheets backup:
+gspread>=6.0
+google-auth>=2.29
