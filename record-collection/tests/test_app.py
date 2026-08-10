@@ -12,7 +12,7 @@ import tempfile
 # settings/engine are created at import time.
 _tmp = tempfile.NamedTemporaryFile(suffix=".db", delete=False)
 os.environ["DATABASE_URL"] = f"sqlite:///{_tmp.name}"
-os.environ["ANTHROPIC_API_KEY"] = "test-key"
+os.environ["OPENROUTER_API_KEY"] = "test-key"
 os.environ["GOOGLE_SHEETS_ENABLED"] = "false"
 
 import pytest  # noqa: E402

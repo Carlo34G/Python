@@ -21,9 +21,21 @@ class Settings:
     """Container for every configurable value, resolved once at startup."""
 
     def __init__(self) -> None:
-        # --- Claude vision ---
-        self.anthropic_api_key: str = os.getenv("ANTHROPIC_API_KEY", "")
-        self.anthropic_model: str = os.getenv("ANTHROPIC_MODEL", "claude-opus-5")
+        # --- Vision recognizer (OpenRouter, OpenAI-compatible API) ---
+        self.openrouter_api_key: str = os.getenv("OPENROUTER_API_KEY", "")
+        self.openrouter_base_url: str = os.getenv(
+            "OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"
+        )
+        # Any vision-capable model on OpenRouter, e.g. "openai/gpt-4o-mini",
+        # "google/gemini-2.0-flash-001", "anthropic/claude-3.5-sonnet".
+        self.openrouter_model: str = os.getenv(
+            "OPENROUTER_MODEL", "openai/gpt-4o-mini"
+        )
+        # Optional attribution headers OpenRouter uses for its rankings.
+        self.openrouter_site_url: str = os.getenv("OPENROUTER_SITE_URL", "")
+        self.openrouter_app_name: str = os.getenv(
+            "OPENROUTER_APP_NAME", "Record Collection Database"
+        )
 
         # --- Discogs ---
         # Two ways to authenticate for read-only database search:
@@ -56,7 +68,7 @@ class Settings:
 
     @property
     def recognizer_configured(self) -> bool:
-        return bool(self.anthropic_api_key)
+        return bool(self.openrouter_api_key)
 
     @property
     def discogs_configured(self) -> bool:
