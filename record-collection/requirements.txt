@@ -1,6 +1,6 @@
 fastapi>=0.110
 uvicorn[standard]>=0.29
-anthropic>=0.40
+openai>=1.30
 requests>=2.31
 python-multipart>=0.0.9
 SQLAlchemy>=2.0

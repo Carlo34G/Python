@@ -87,7 +87,7 @@ def health() -> dict:
         "recognizer_configured": settings.recognizer_configured,
         "discogs_configured": settings.discogs_configured,
         "sheets_backup_enabled": settings.google_sheets_enabled,
-        "model": settings.anthropic_model,
+        "model": settings.openrouter_model,
     }
 
 

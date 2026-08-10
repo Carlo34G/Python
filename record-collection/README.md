@@ -1,11 +1,11 @@
 # 🎵 Record Collection Database
 
-A small web app for cataloguing your vinyl. Upload a photo of a sleeve — **Claude
-vision** reads the artist and album and writes a short comment, **Discogs** fills
-in the release date, genre, label and cover art, and everything is stored in a
-local **SQLite** database with an optional **Google Sheets** backup. A duplicate
-check warns you before you add a record you already own, so you don't
-double-purchase.
+A small web app for cataloguing your vinyl. Upload a photo of a sleeve — a
+**vision model via OpenRouter** reads the artist and album and writes a short
+comment, **Discogs** fills in the release date, genre, label and cover art, and
+everything is stored in a local **SQLite** database with an optional **Google
+Sheets** backup. A duplicate check warns you before you add a record you already
+own, so you don't double-purchase.
 
 Built with **FastAPI** and designed to run in **Docker** on `srv-02`.
 
@@ -14,7 +14,7 @@ Built with **FastAPI** and designed to run in **Docker** on `srv-02`.
 ## How it works
 
 ```
- photo ──▶ Claude vision ──▶ {artist, album, comment}
+ photo ──▶ OpenRouter vision model ──▶ {artist, album, comment}
                                    │
                                    ▼
                              Discogs search ──▶ release date, genre, label, cover
@@ -47,7 +47,7 @@ Open <http://localhost:8000>.
 
 ```bash
 cd record-collection
-cp .env.example .env          # fill in ANTHROPIC_API_KEY and DISCOGS_TOKEN
+cp .env.example .env          # fill in OPENROUTER_API_KEY and Discogs credentials
 docker compose up -d --build
 ```
 
@@ -65,9 +65,12 @@ All configuration is via environment variables (see `.env.example`):
 
 | Variable | Required | Purpose |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | **Yes** | Claude vision recognizer. Get one at console.anthropic.com |
-| `ANTHROPIC_MODEL` | No | Vision model. Default `claude-opus-5`. **Set to `claude-haiku-4-5` to cut cost** — it reads covers well |
-| `DISCOGS_TOKEN` | Recommended | Free Discogs token for release details. discogs.com/settings/developers |
+| `OPENROUTER_API_KEY` | **Yes** | Vision recognizer. Get a key at openrouter.ai/keys |
+| `OPENROUTER_MODEL` | No | Any vision model on OpenRouter. Default `openai/gpt-4o-mini`. Cheaper: `google/gemini-2.0-flash-001`; more capable: `openai/gpt-4o` |
+| `OPENROUTER_BASE_URL` | No | API base URL. Default `https://openrouter.ai/api/v1` |
+| `OPENROUTER_SITE_URL` / `OPENROUTER_APP_NAME` | No | Optional attribution for OpenRouter's rankings |
+| `DISCOGS_TOKEN` | Alt. | Personal Discogs token — alternative to the key/secret pair below |
+| `DISCOGS_CONSUMER_KEY` / `DISCOGS_CONSUMER_SECRET` | Recommended | Discogs app credentials for release details (free) |
 | `DISCOGS_USER_AGENT` | No | Sent to Discogs (they require a User-Agent) |
 | `DATABASE_URL` | No | SQLite path. Default is the mounted `/data/records.db` |
 | `GOOGLE_SHEETS_ENABLED` | No | `true` to turn on the backup |
@@ -78,9 +81,12 @@ All configuration is via environment variables (see `.env.example`):
 ### Cost note
 
 - **Discogs is completely free** — no per-call charge, ~60 requests/minute.
-- The **only** paid piece is the Claude vision call, roughly a fraction of a
-  cent per photo on `claude-opus-5`, and cheaper still on `claude-haiku-4-5`.
-  Switch models with `ANTHROPIC_MODEL` — no code change needed.
+- The **only** paid piece is the OpenRouter vision call. Cost depends entirely
+  on the model you choose in `OPENROUTER_MODEL` — models like
+  `google/gemini-2.0-flash-001` and `openai/gpt-4o-mini` read covers well for a
+  fraction of a cent per photo. Switch models any time; no code change needed.
+- You pay OpenRouter directly (top up credits at openrouter.ai) and it routes to
+  whichever underlying model you pick.
 
 ### Enabling the Google Sheets backup
 
@@ -118,4 +124,4 @@ pip install pytest
 pytest
 ```
 
-The tests stub out the Claude and Discogs calls, so they run offline.
+The tests stub out the AI and Discogs calls, so they run offline.

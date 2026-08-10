@@ -173,7 +173,7 @@
         const r = await fetch('/api/health');
         const h = await r.json();
         const bits = [];
-        if (!h.recognizer_configured) bits.push('⚠️ AI recognizer not configured (set ANTHROPIC_API_KEY)');
+        if (!h.recognizer_configured) bits.push('⚠️ AI recognizer not configured (set OPENROUTER_API_KEY)');
         if (!h.discogs_configured) bits.push('ℹ️ Discogs not configured — records saved without release details');
         if (bits.length) {
           $('statusBanner').innerHTML =
